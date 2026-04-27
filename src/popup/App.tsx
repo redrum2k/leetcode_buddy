@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { StatsTab } from './components/StatsTab';
 import { ProblemAreasTab } from './components/ProblemAreasTab';
+import { SolvedTab } from './components/SolvedTab';
 
-type Tab = 'stats' | 'areas';
+type Tab = 'stats' | 'areas' | 'solved';
+
+const TAB_LABELS: Record<Tab, string> = {
+  stats: 'Stats',
+  areas: 'Areas',
+  solved: 'Solved',
+};
 
 export function App() {
   const [activeTab, setActiveTab] = useState<Tab>('stats');
@@ -24,7 +31,7 @@ export function App() {
 
       {/* Tab bar */}
       <div className="flex border-b border-white/10">
-        {(['stats', 'areas'] as Tab[]).map((tab) => (
+        {(['stats', 'areas', 'solved'] as Tab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -35,14 +42,16 @@ export function App() {
                 : 'text-white/50 hover:text-white/80',
             ].join(' ')}
           >
-            {tab === 'stats' ? 'Stats' : 'Problem Areas'}
+            {TAB_LABELS[tab]}
           </button>
         ))}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === 'stats' ? <StatsTab /> : <ProblemAreasTab />}
+        {activeTab === 'stats' && <StatsTab />}
+        {activeTab === 'areas' && <ProblemAreasTab />}
+        {activeTab === 'solved' && <SolvedTab />}
       </div>
     </div>
   );

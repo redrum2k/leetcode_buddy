@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { sendMessage } from '@/lib/messaging';
+import { useCallback, useEffect, useState } from 'react';
+import { sendMessage, addMessageListener } from '@/lib/messaging';
 import { usePrefs } from '../hooks/usePrefs';
 import { useStats } from '../hooks/useStats';
 import { ProgressBar } from './ProgressBar';
@@ -25,8 +25,24 @@ function StatCard({
 }
 
 export function StatsTab() {
-  const { prefs, updatePref } = usePrefs();
-  const { stats, loading } = useStats(prefs.selectedModuleSlug);
+  const { prefs, updatePref, prefsLoaded } = usePrefs();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { stats, loading } = useStats(prefs.selectedModuleSlug, refreshKey);
+
+  // Auto-trigger backfill on first open when never synced
+  useEffect(() => {
+    if (!prefsLoaded) return;
+    if (prefs.lastBackfill === null && !prefs.backfillInProgress) {
+      void sendMessage({ type: 'POPUP_TRIGGER_BACKFILL' });
+    }
+  }, [prefsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refresh stats display when backfill finishes
+  useEffect(() => {
+    return addMessageListener('BG_BACKFILL_PROGRESS', (msg) => {
+      if (msg.phase === 'done') setRefreshKey((k) => k + 1);
+    });
+  }, []);
 
   const handleRefresh = useCallback(async () => {
     await sendMessage({ type: 'POPUP_TRIGGER_BACKFILL' });

@@ -26,7 +26,7 @@ function countUniqueSolved(
   ).size;
 }
 
-export function useStats(activePlanSlug: string | null) {
+export function useStats(activePlanSlug: string | null, refreshKey = 0) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -73,7 +73,7 @@ export function useStats(activePlanSlug: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [activePlanSlug]);
+  }, [activePlanSlug, refreshKey]);
 
   return { stats, loading };
 }

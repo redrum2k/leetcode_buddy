@@ -13,7 +13,6 @@ import {
   getSubmissionList,
   getProblemMetadata,
   getStudyPlanDetail,
-  getUserStudyPlans,
 } from '@/lib/graphql/queries';
 import type { Submission, Difficulty } from '@/types';
 
@@ -138,14 +137,6 @@ async function runBackfill(): Promise<void> {
       };
     });
     await upsertSubmissions(fullSubs);
-
-    // 4. Fetch study plans (non-fatal)
-    try {
-      const plans = await getUserStudyPlans();
-      for (const plan of plans) await upsertStudyPlan(plan);
-    } catch {
-      // non-fatal
-    }
 
     await storePrefs({ lastBackfill: Date.now(), backfillInProgress: false });
     await broadcast({

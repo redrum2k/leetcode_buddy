@@ -10,10 +10,12 @@ const DEFAULTS: UserPrefs = {
 
 export function usePrefs() {
   const [prefs, setPrefs] = useState<UserPrefs>(DEFAULTS);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   useEffect(() => {
     chrome.storage.local.get(Object.keys(DEFAULTS)).then((stored) => {
       setPrefs({ ...DEFAULTS, ...(stored as Partial<UserPrefs>) });
+      setPrefsLoaded(true);
     });
 
     const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
@@ -37,5 +39,5 @@ export function usePrefs() {
     setPrefs((prev) => ({ ...prev, ...patch }));
   };
 
-  return { prefs, updatePref };
+  return { prefs, updatePref, prefsLoaded };
 }
