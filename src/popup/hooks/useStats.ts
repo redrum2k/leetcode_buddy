@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAllSubmissions, getStudyPlan } from '@/lib/db/repos';
 import { computeProblemAreas, type ProblemArea } from '@/lib/scoring/problemAreas';
+import { PLAN_PROBLEMS } from '@/lib/studyPlans/data';
 import type { Submission, StudyPlan } from '@/types';
 
 export interface Stats {
@@ -36,7 +37,20 @@ export function useStats(activePlanSlug: string | null, refreshKey = 0) {
     async function load() {
       setLoading(true);
       const submissions = await getAllSubmissions();
-      const plan = activePlanSlug ? ((await getStudyPlan(activePlanSlug)) ?? null) : null;
+      let plan: StudyPlan | null = null;
+      if (activePlanSlug) {
+        const hardcoded = PLAN_PROBLEMS[activePlanSlug];
+        if (hardcoded) {
+          plan = {
+            slug: activePlanSlug,
+            name: hardcoded.name,
+            problemSlugs: hardcoded.slugs as string[],
+            lastFetched: 0,
+          };
+        } else {
+          plan = (await getStudyPlan(activePlanSlug)) ?? null;
+        }
+      }
       if (cancelled) return;
 
       const solvedSlugs = new Set(
