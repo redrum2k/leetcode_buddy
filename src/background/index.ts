@@ -7,6 +7,9 @@ import {
   upsertProblem,
   upsertStudyPlan,
   getAllStudyPlans,
+  getChatSession,
+  getChatSessionByProblem,
+  upsertChatSession,
 } from '@/lib/db/repos';
 import {
   getUserProfile,
@@ -14,7 +17,8 @@ import {
   getProblemMetadata,
   getStudyPlanDetail,
 } from '@/lib/graphql/queries';
-import type { Submission, Difficulty } from '@/types';
+import { buildSystemPrompt } from '@/lib/ai/systemPrompt';
+import type { Submission, Difficulty, ProblemContext, ChatSession, ChatMessage } from '@/types';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 
@@ -38,6 +42,11 @@ async function getStoredPrefs() {
 async function storePrefs(patch: Record<string, unknown>): Promise<void> {
   await chrome.storage.local.set(patch);
 }
+
+// ── Problem context cache ─────────────────────────────────────────────────────
+// Kept in memory; re-populated by content script on each problem page visit.
+
+let currentProblemContext: ProblemContext | null = null;
 
 // ── webRequest observer ───────────────────────────────────────────────────────
 // Registered at top-level so it survives service worker restarts.
@@ -157,6 +166,198 @@ async function runBackfill(): Promise<void> {
   }
 }
 
+// ── AI Streaming ──────────────────────────────────────────────────────────────
+
+async function streamAIResponse(
+  port: chrome.runtime.Port,
+  session: ChatSession,
+): Promise<void> {
+  const stored = await chrome.storage.local.get(['anthropicApiKey', 'selectedModel']);
+  const apiKey = stored.anthropicApiKey as string | undefined;
+  const model = (stored.selectedModel as string | undefined) ?? 'claude-sonnet-4-5';
+
+  if (!apiKey) {
+    safePostMessage(port, {
+      type: 'AI_ERROR',
+      error: 'No API key configured. Open the extension popup → Settings to add your Anthropic key.',
+    });
+    return;
+  }
+
+  const ctx = session.problemContext;
+  const systemPrompt = buildSystemPrompt({
+    problemTitle: ctx?.title ?? 'Unknown Problem',
+    problemDifficulty: ctx?.difficulty ?? 'Medium',
+    problemTags: ctx?.topicTags ?? [],
+    problemStatement: ctx?.statement ?? '',
+    userCurrentCode: ctx?.currentCode,
+  });
+
+  const apiMessages = session.messages.map((m) => ({ role: m.role, content: m.content }));
+
+  let response: Response;
+  try {
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4096,
+        stream: true,
+        system: systemPrompt,
+        messages: apiMessages,
+      }),
+    });
+  } catch (err) {
+    safePostMessage(port, {
+      type: 'AI_ERROR',
+      error: `Network error: ${err instanceof Error ? err.message : String(err)}`,
+    });
+    return;
+  }
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    safePostMessage(port, {
+      type: 'AI_ERROR',
+      error: `Anthropic API error ${response.status}: ${errText}`,
+    });
+    return;
+  }
+
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullContent = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data) as {
+            type?: string;
+            delta?: { type?: string; text?: string };
+          };
+          if (
+            parsed.type === 'content_block_delta' &&
+            parsed.delta?.type === 'text_delta' &&
+            parsed.delta.text
+          ) {
+            fullContent += parsed.delta.text;
+            safePostMessage(port, { type: 'AI_CHUNK', chunk: parsed.delta.text });
+          }
+        } catch {
+          // Ignore malformed SSE lines
+        }
+      }
+    }
+  } catch (err) {
+    safePostMessage(port, {
+      type: 'AI_ERROR',
+      error: `Stream error: ${err instanceof Error ? err.message : String(err)}`,
+    });
+    return;
+  }
+
+  // Persist the complete assistant message
+  const assistantMsg: ChatMessage = {
+    role: 'assistant',
+    content: fullContent,
+    timestamp: Date.now(),
+  };
+  session.messages.push(assistantMsg);
+  await upsertChatSession(session);
+
+  safePostMessage(port, { type: 'AI_DONE' });
+}
+
+function safePostMessage(port: chrome.runtime.Port, msg: unknown): void {
+  try {
+    port.postMessage(msg);
+  } catch {
+    // Port may have been closed — ignore
+  }
+}
+
+// ── AI Chat Port ──────────────────────────────────────────────────────────────
+// Long-lived connection from the chat window; handles streaming via SSE.
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'ai-chat') return;
+
+  port.onMessage.addListener((msg: { type: string; [k: string]: unknown }) => {
+    void (async () => {
+      try {
+        if (msg.type === 'INIT') {
+          const sessionId = msg.sessionId as string;
+          const session = await getChatSession(sessionId);
+          if (!session) {
+            safePostMessage(port, { type: 'AI_ERROR', error: 'Session not found.' });
+            return;
+          }
+          safePostMessage(port, { type: 'SESSION', session });
+
+          // Auto-stream if the last message is a pending user message
+          const msgs = session.messages;
+          if (msgs.length > 0 && msgs[msgs.length - 1].role === 'user') {
+            await streamAIResponse(port, session);
+          }
+        }
+
+        if (msg.type === 'SEND') {
+          const sessionId = msg.sessionId as string;
+          const content = msg.content as string;
+          const session = await getChatSession(sessionId);
+          if (!session) return;
+
+          const userMsg: ChatMessage = {
+            role: 'user',
+            content,
+            timestamp: Date.now(),
+          };
+          session.messages.push(userMsg);
+          await upsertChatSession(session);
+
+          await streamAIResponse(port, session);
+        }
+
+        if (msg.type === 'NEW_CONVERSATION') {
+          const currentSessionId = msg.currentSessionId as string;
+          const old = await getChatSession(currentSessionId);
+          const newSession: ChatSession = {
+            id: crypto.randomUUID(),
+            problemSlug: old?.problemSlug ?? null,
+            problemContext: old?.problemContext ?? null,
+            startedAt: Date.now(),
+            messages: [],
+          };
+          await upsertChatSession(newSession);
+          safePostMessage(port, { type: 'SESSION', session: newSession });
+        }
+      } catch (err) {
+        safePostMessage(port, {
+          type: 'AI_ERROR',
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    })();
+  });
+});
+
 // ── Message routing ───────────────────────────────────────────────────────────
 // Chrome message handlers must return synchronously (void | boolean).
 // Async work is wrapped in void IIFE so the handler returns synchronously.
@@ -191,6 +392,10 @@ addMessageListener('CONTENT_SUBMISSION_DETECTED', (msg) => {
   })();
 });
 
+addMessageListener('CONTENT_PROBLEM_CONTEXT', (msg) => {
+  currentProblemContext = msg.context;
+});
+
 addMessageListener('CONTENT_OPEN_POPUP', () => {
   // chrome.action.openPopup() available in Chrome 127+ (July 2024)
   void chrome.action.openPopup().catch(() => {
@@ -221,6 +426,11 @@ addMessageListener('POPUP_GET_STATUS', (_msg, _sender, sendResponse) => {
   return true; // keep channel open for async sendResponse
 });
 
+addMessageListener('POPUP_GET_CONTEXT', (_msg, _sender, sendResponse) => {
+  sendResponse({ type: 'BG_CONTEXT', context: currentProblemContext });
+  return true;
+});
+
 addMessageListener('POPUP_SET_MODULE', (msg) => {
   void (async () => {
     await storePrefs({ selectedModuleSlug: msg.slug, activePlanSlug: msg.slug });
@@ -236,6 +446,44 @@ addMessageListener('POPUP_SET_MODULE', (msg) => {
         }
       }
     }
+  })();
+});
+
+addMessageListener('POPUP_OPEN_CHAT', (msg) => {
+  void (async () => {
+    const context = currentProblemContext;
+    const problemSlug = context?.slug ?? null;
+
+    // Resume existing session for this problem, or create a new one
+    let session = await getChatSessionByProblem(problemSlug);
+
+    if (!session) {
+      session = {
+        id: crypto.randomUUID(),
+        problemSlug,
+        problemContext: context,
+        startedAt: Date.now(),
+        messages: [],
+      };
+    }
+
+    // Append the initial user message
+    const userMsg: ChatMessage = {
+      role: 'user',
+      content: msg.initialMessage,
+      timestamp: Date.now(),
+    };
+    session.messages.push(userMsg);
+    await upsertChatSession(session);
+
+    // Open the chat window
+    const chatUrl = chrome.runtime.getURL('src/chat/index.html') + '?sessionId=' + session.id;
+    await chrome.windows.create({
+      url: chatUrl,
+      type: 'popup',
+      width: 600,
+      height: 800,
+    });
   })();
 });
 

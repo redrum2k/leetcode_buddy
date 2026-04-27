@@ -46,3 +46,28 @@ export interface UserPrefs {
   lastBackfill: number | null;
   backfillInProgress: boolean;
 }
+
+// ── AI Chat ───────────────────────────────────────────────────────────────────
+
+export interface ProblemContext {
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  statement: string;
+  topicTags: string[];
+  currentCode?: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+}
+
+export interface ChatSession {
+  id: string;
+  problemSlug: string | null;
+  problemContext: ProblemContext | null;
+  startedAt: number;
+  messages: ChatMessage[];
+}

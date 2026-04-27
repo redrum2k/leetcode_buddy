@@ -17,5 +17,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        // Chat window is opened programmatically via chrome.windows.create —
+        // not declared in the manifest, so we add it as an extra entry point.
+        chat: resolve(__dirname, 'src/chat/index.html'),
+      },
+    },
   },
 });

@@ -1,5 +1,5 @@
 import { db } from './schema';
-import type { Submission, Problem, StudyPlan } from '@/types';
+import type { Submission, Problem, StudyPlan, ChatSession } from '@/types';
 
 // ── Submissions ───────────────────────────────────────────────────────────────
 
@@ -57,4 +57,23 @@ export async function getStudyPlan(slug: string): Promise<StudyPlan | undefined>
 
 export async function getAllStudyPlans(): Promise<StudyPlan[]> {
   return db.studyPlans.toArray();
+}
+
+// ── Chat Sessions ─────────────────────────────────────────────────────────────
+
+export async function upsertChatSession(session: ChatSession): Promise<void> {
+  await db.chatSessions.put(session);
+}
+
+export async function getChatSession(id: string): Promise<ChatSession | undefined> {
+  return db.chatSessions.get(id);
+}
+
+export async function getChatSessionByProblem(
+  problemSlug: string | null,
+): Promise<ChatSession | undefined> {
+  const all = await db.chatSessions.toArray();
+  return all
+    .filter((s) => s.problemSlug === problemSlug)
+    .sort((a, b) => b.startedAt - a.startedAt)[0];
 }

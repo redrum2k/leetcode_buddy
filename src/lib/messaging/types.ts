@@ -1,4 +1,4 @@
-import type { StudyPlan, UserPrefs } from '@/types';
+import type { ProblemContext, StudyPlan, UserPrefs } from '@/types';
 
 export interface ContentUrlChangedMsg {
   type: 'CONTENT_URL_CHANGED';
@@ -16,6 +16,11 @@ export interface ContentOpenPopupMsg {
   type: 'CONTENT_OPEN_POPUP';
 }
 
+export interface ContentProblemContextMsg {
+  type: 'CONTENT_PROBLEM_CONTEXT';
+  context: ProblemContext;
+}
+
 export interface PopupTriggerBackfillMsg {
   type: 'POPUP_TRIGGER_BACKFILL';
 }
@@ -27,6 +32,15 @@ export interface PopupGetStatusMsg {
 export interface PopupSetModuleMsg {
   type: 'POPUP_SET_MODULE';
   slug: string | null;
+}
+
+export interface PopupOpenChatMsg {
+  type: 'POPUP_OPEN_CHAT';
+  initialMessage: string;
+}
+
+export interface PopupGetContextMsg {
+  type: 'POPUP_GET_CONTEXT';
 }
 
 export interface BgBackfillProgressMsg {
@@ -44,15 +58,24 @@ export interface BgStatusMsg {
   availablePlans: StudyPlan[];
 }
 
+export interface BgContextMsg {
+  type: 'BG_CONTEXT';
+  context: ProblemContext | null;
+}
+
 export type AppMessage =
   | ContentUrlChangedMsg
   | ContentSubmissionDetectedMsg
   | ContentOpenPopupMsg
+  | ContentProblemContextMsg
   | PopupTriggerBackfillMsg
   | PopupGetStatusMsg
   | PopupSetModuleMsg
+  | PopupOpenChatMsg
+  | PopupGetContextMsg
   | BgBackfillProgressMsg
-  | BgStatusMsg;
+  | BgStatusMsg
+  | BgContextMsg;
 
 export type MessageType = AppMessage['type'];
 export type MessageOfType<T extends MessageType> = Extract<AppMessage, { type: T }>;
