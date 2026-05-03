@@ -63,6 +63,11 @@ export interface BgContextMsg {
   context: ProblemContext | null;
 }
 
+export interface BgContextUpdatedMsg {
+  type: 'BG_CONTEXT_UPDATED';
+  context: ProblemContext | null;
+}
+
 export type AppMessage =
   | ContentUrlChangedMsg
   | ContentSubmissionDetectedMsg
@@ -75,7 +80,8 @@ export type AppMessage =
   | PopupGetContextMsg
   | BgBackfillProgressMsg
   | BgStatusMsg
-  | BgContextMsg;
+  | BgContextMsg
+  | BgContextUpdatedMsg;
 
 export type MessageType = AppMessage['type'];
 export type MessageOfType<T extends MessageType> = Extract<AppMessage, { type: T }>;

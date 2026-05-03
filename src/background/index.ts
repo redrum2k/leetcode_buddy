@@ -66,6 +66,10 @@ if (chrome.sidePanel) {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
 }
 
+// If the SW was killed mid-backfill, the flag stays true forever. Reset it on every startup
+// so StatsTab's trigger can fire a fresh backfill when the panel next opens.
+void chrome.storage.local.set({ backfillInProgress: false });
+
 // ── webRequest observer ───────────────────────────────────────────────────────
 // Registered at top-level so it survives service worker restarts.
 
@@ -471,6 +475,15 @@ chrome.runtime.onConnect.addListener((port) => {
 
 addMessageListener('CONTENT_URL_CHANGED', (msg) => {
   void (async () => {
+    // Clear problem context when navigating away from a problem page so the
+    // side panel's ChatBar stops showing a stale problem title.
+    if (!/\/problems\/[^/?#]+/.test(msg.url)) {
+      currentProblemContext = null;
+      currentTabId = null;
+      void chrome.storage.session.set({ currentProblemContext: null, currentTabId: null });
+      chrome.runtime.sendMessage({ type: 'BG_CONTEXT_UPDATED', context: null }).catch(() => {});
+    }
+
     if (!msg.detectedPlanSlug) return;
     const prefs = await getStoredPrefs();
     if (!prefs.selectedModuleSlug) {
@@ -506,11 +519,12 @@ addMessageListener('CONTENT_PROBLEM_CONTEXT', (msg, sender) => {
     currentProblemContext: msg.context,
     currentTabId: sender.tab?.id ?? null,
   });
+  chrome.runtime.sendMessage({ type: 'BG_CONTEXT_UPDATED', context: msg.context }).catch(() => {});
 });
 
 addMessageListener('CONTENT_OPEN_POPUP', (_msg, sender) => {
   const tabId = sender.tab?.id;
-  if (tabId !== undefined && chrome.sidePanel) {
+  if (tabId !== undefined) {
     void chrome.sidePanel.open({ tabId }).catch(() => {
       // User gesture may not propagate through SW messages — toolbar icon is the fallback
     });

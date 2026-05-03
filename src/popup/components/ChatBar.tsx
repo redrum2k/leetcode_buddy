@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { sendMessageWithResponse } from '@/lib/messaging';
+import { sendMessageWithResponse, addMessageListener } from '@/lib/messaging';
 import type { BgContextMsg } from '@/lib/messaging';
 import type { ProblemContext } from '@/types';
 
@@ -13,21 +13,13 @@ export function ChatBar({ onOpenChat }: ChatBarProps) {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    // Initial fetch
     sendMessageWithResponse<'POPUP_GET_CONTEXT', BgContextMsg>({ type: 'POPUP_GET_CONTEXT' })
       .then((res) => setContext(res.context))
       .catch(() => setContext(null));
 
-    // Reactive: update title instantly when user switches problems on LeetCode.
-    // The background writes currentProblemContext to session storage on every
-    // CONTENT_PROBLEM_CONTEXT message, so listening here is enough.
-    const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
-      if ('currentProblemContext' in changes) {
-        setContext((changes.currentProblemContext.newValue as ProblemContext | null) ?? null);
-      }
-    };
-    chrome.storage.session.onChanged.addListener(listener);
-    return () => chrome.storage.session.onChanged.removeListener(listener);
+    return addMessageListener('BG_CONTEXT_UPDATED', (msg) => {
+      setContext(msg.context);
+    });
   }, []);
 
   const handleSend = useCallback(async () => {
