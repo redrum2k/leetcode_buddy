@@ -59,17 +59,12 @@ async function ensureContextHydrated(): Promise<void> {
 }
 
 // ── Side panel setup ─────────────────────────────────────────────────────────
-// Registered at top-level so it runs on every SW startup (not just install).
+// Guard against chrome.sidePanel being undefined if the permission hasn't been
+// granted yet (e.g. first reload after adding the permission to the manifest).
 
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
-
-// Enable the side panel only on LeetCode tabs; hide it everywhere else.
-// tab.url is populated for LeetCode tabs via host_permissions; undefined for others.
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status !== 'complete') return;
-  const isLeetCode = tab.url?.includes('leetcode.com') ?? false;
-  void chrome.sidePanel.setOptions({ tabId, enabled: isLeetCode }).catch(() => {});
-});
+if (chrome.sidePanel) {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
+}
 
 // ── webRequest observer ───────────────────────────────────────────────────────
 // Registered at top-level so it survives service worker restarts.
@@ -515,7 +510,7 @@ addMessageListener('CONTENT_PROBLEM_CONTEXT', (msg, sender) => {
 
 addMessageListener('CONTENT_OPEN_POPUP', (_msg, sender) => {
   const tabId = sender.tab?.id;
-  if (tabId !== undefined) {
+  if (tabId !== undefined && chrome.sidePanel) {
     void chrome.sidePanel.open({ tabId }).catch(() => {
       // User gesture may not propagate through SW messages — toolbar icon is the fallback
     });
@@ -605,5 +600,10 @@ addMessageListener('POPUP_OPEN_CHAT', (msg, _sender, sendResponse) => {
 // ── Install hook ──────────────────────────────────────────────────────────────
 
 chrome.runtime.onInstalled.addListener(({ reason }) => {
+  // Re-apply panel behavior on every install/update in case the top-level call
+  // ran before the sidePanel permission was fully granted.
+  if (chrome.sidePanel) {
+    void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
+  }
   if (reason === 'install') void runBackfill();
 });
