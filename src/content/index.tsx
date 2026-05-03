@@ -1,5 +1,21 @@
+import { createRoot } from 'react-dom/client';
+import { Fab } from './Fab';
 import { sendMessage } from '@/lib/messaging';
 import type { Difficulty, ProblemContext } from '@/types';
+
+// Mount FAB into an isolated container so LeetCode styles don't bleed in
+const container = document.createElement('div');
+container.id = 'leetcode-buddy-fab-root';
+document.body.appendChild(container);
+
+const root = createRoot(container);
+root.render(
+  <Fab
+    onClick={() => {
+      sendMessage({ type: 'CONTENT_OPEN_POPUP' }).catch(console.error);
+    }}
+  />,
+);
 
 // ── URL detection (SPA-aware) ─────────────────────────────────────────────────
 
