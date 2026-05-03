@@ -22,6 +22,9 @@ export default defineConfig({
         // Chat window is opened programmatically via chrome.windows.create —
         // not declared in the manifest, so we add it as an extra entry point.
         chat: resolve(__dirname, 'src/chat/index.html'),
+        // Side panel entry — safety net in case crxjs beta doesn't auto-process
+        // side_panel.default_path from the manifest.
+        popup: resolve(__dirname, 'src/popup/index.html'),
       },
     },
   },

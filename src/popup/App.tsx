@@ -48,10 +48,10 @@ export function App() {
   };
 
   // Blank screen while restoring state to avoid flash
-  if (!loaded) return <div className="w-[400px] h-[600px] bg-[#1a1a1a] rounded-xl" />;
+  if (!loaded) return <div className="w-full h-screen bg-[#1a1a1a]" />;
 
   return (
-    <div className="w-[400px] h-[600px] flex flex-col bg-[#1a1a1a] text-[#eff1f6] font-sans overflow-hidden rounded-xl">
+    <div className="w-full h-screen flex flex-col bg-[#1a1a1a] text-[#eff1f6] font-sans overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.08] shrink-0 bg-[#1a1a1a]">
         <div

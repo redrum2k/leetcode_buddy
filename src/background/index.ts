@@ -58,6 +58,19 @@ async function ensureContextHydrated(): Promise<void> {
   currentTabId = (stored.currentTabId as number | undefined) ?? null;
 }
 
+// ── Side panel setup ─────────────────────────────────────────────────────────
+// Registered at top-level so it runs on every SW startup (not just install).
+
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
+
+// Enable the side panel only on LeetCode tabs; hide it everywhere else.
+// tab.url is populated for LeetCode tabs via host_permissions; undefined for others.
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status !== 'complete') return;
+  const isLeetCode = tab.url?.includes('leetcode.com') ?? false;
+  void chrome.sidePanel.setOptions({ tabId, enabled: isLeetCode }).catch(() => {});
+});
+
 // ── webRequest observer ───────────────────────────────────────────────────────
 // Registered at top-level so it survives service worker restarts.
 
@@ -500,11 +513,13 @@ addMessageListener('CONTENT_PROBLEM_CONTEXT', (msg, sender) => {
   });
 });
 
-addMessageListener('CONTENT_OPEN_POPUP', () => {
-  // chrome.action.openPopup() available in Chrome 127+ (July 2024)
-  void chrome.action.openPopup().catch(() => {
-    // Older Chrome: user must click the extension icon manually
-  });
+addMessageListener('CONTENT_OPEN_POPUP', (_msg, sender) => {
+  const tabId = sender.tab?.id;
+  if (tabId !== undefined) {
+    void chrome.sidePanel.open({ tabId }).catch(() => {
+      // User gesture may not propagate through SW messages — toolbar icon is the fallback
+    });
+  }
 });
 
 addMessageListener('POPUP_TRIGGER_BACKFILL', () => {

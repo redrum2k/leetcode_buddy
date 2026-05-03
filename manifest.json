@@ -3,7 +3,7 @@
   "name": "Leetcode Buddy",
   "version": "0.2.0",
   "description": "Track LeetCode submissions, surface problem areas, and chat with an AI Socratic tutor.",
-  "permissions": ["storage", "webRequest", "windows", "scripting"],
+  "permissions": ["storage", "webRequest", "windows", "scripting", "sidePanel"],
   "host_permissions": [
     "https://leetcode.com/*",
     "https://api.anthropic.com/*"
@@ -18,8 +18,10 @@
       "js": ["src/content/index.tsx"]
     }
   ],
+  "side_panel": {
+    "default_path": "src/popup/index.html"
+  },
   "action": {
-    "default_popup": "src/popup/index.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
