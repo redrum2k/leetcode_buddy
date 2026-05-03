@@ -18,6 +18,7 @@ import {
   getStudyPlanDetail,
 } from '@/lib/graphql/queries';
 import { buildSystemPrompt } from '@/lib/ai/systemPrompt';
+import { buildCopilotPrompt, extractCodeBlock } from '@/lib/ai/copilotPrompt';
 import type { Submission, Difficulty, ProblemContext, ChatSession, ChatMessage } from '@/types';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -45,8 +46,17 @@ async function storePrefs(patch: Record<string, unknown>): Promise<void> {
 
 // ── Problem context cache ─────────────────────────────────────────────────────
 // Kept in memory; re-populated by content script on each problem page visit.
+// Also persisted to chrome.storage.session so it survives service worker restarts.
 
 let currentProblemContext: ProblemContext | null = null;
+let currentTabId: number | null = null;
+
+async function ensureContextHydrated(): Promise<void> {
+  if (currentProblemContext !== null) return;
+  const stored = await chrome.storage.session.get(['currentProblemContext', 'currentTabId']);
+  currentProblemContext = (stored.currentProblemContext as ProblemContext | undefined) ?? null;
+  currentTabId = (stored.currentTabId as number | undefined) ?? null;
+}
 
 // ── webRequest observer ───────────────────────────────────────────────────────
 // Registered at top-level so it survives service worker restarts.
@@ -168,9 +178,50 @@ async function runBackfill(): Promise<void> {
 
 // ── AI Streaming ──────────────────────────────────────────────────────────────
 
-async function streamAIResponse(
+async function getFreshCode(): Promise<string> {
+  if (currentTabId === null) return '(not available)';
+  try {
+    type MonacoWindow = { monaco?: { editor?: { getEditors?: () => { getValue(): string }[] } } };
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: currentTabId },
+      world: 'MAIN',
+      func: () =>
+        (window as unknown as MonacoWindow).monaco?.editor?.getEditors?.()[0]?.getValue() ?? '',
+    });
+    return (results?.[0]?.result as string) || '(not available)';
+  } catch {
+    return '(not available)';
+  }
+}
+
+async function injectCodeIntoEditor(code: string): Promise<void> {
+  if (currentTabId === null) throw new Error('No active LeetCode tab found.');
+  type MonacoEditor = { setValue(v: string): void; revealLine(n: number): void };
+  type MonacoWindow = { monaco?: { editor?: { getEditors?: () => MonacoEditor[] } } };
+  await chrome.scripting.executeScript({
+    target: { tabId: currentTabId },
+    world: 'MAIN',
+    func: (src: string) => {
+      const editor = (window as unknown as MonacoWindow).monaco?.editor?.getEditors?.()[0];
+      if (!editor) return;
+      let i = 0;
+      const interval = setInterval(() => {
+        i = Math.min(i + 10, src.length);
+        editor.setValue(src.slice(0, i));
+        if (i >= src.length) {
+          clearInterval(interval);
+          editor.revealLine(src.split('\n').length);
+        }
+      }, 20);
+    },
+    args: [code],
+  });
+}
+
+async function streamAIResponseWithPrompt(
   port: chrome.runtime.Port,
   session: ChatSession,
+  systemPrompt: string,
 ): Promise<void> {
   const stored = await chrome.storage.local.get(['anthropicApiKey', 'selectedModel']);
   const apiKey = stored.anthropicApiKey as string | undefined;
@@ -184,15 +235,6 @@ async function streamAIResponse(
     return;
   }
 
-  const ctx = session.problemContext;
-  const systemPrompt = buildSystemPrompt({
-    problemTitle: ctx?.title ?? 'Unknown Problem',
-    problemDifficulty: ctx?.difficulty ?? 'Medium',
-    problemTags: ctx?.topicTags ?? [],
-    problemStatement: ctx?.statement ?? '',
-    userCurrentCode: ctx?.currentCode,
-  });
-
   const apiMessages = session.messages.map((m) => ({ role: m.role, content: m.content }));
 
   let response: Response;
@@ -202,6 +244,7 @@ async function streamAIResponse(
       headers: {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
         'content-type': 'application/json',
       },
       body: JSON.stringify({
@@ -285,6 +328,21 @@ async function streamAIResponse(
   safePostMessage(port, { type: 'AI_DONE' });
 }
 
+async function streamAIResponse(
+  port: chrome.runtime.Port,
+  session: ChatSession,
+): Promise<void> {
+  const ctx = session.problemContext;
+  const systemPrompt = buildSystemPrompt({
+    problemTitle: ctx?.title ?? 'Unknown Problem',
+    problemDifficulty: ctx?.difficulty ?? 'Medium',
+    problemTags: ctx?.topicTags ?? [],
+    problemStatement: ctx?.statement ?? '',
+    userCurrentCode: ctx?.currentCode,
+  });
+  await streamAIResponseWithPrompt(port, session, systemPrompt);
+}
+
 function safePostMessage(port: chrome.runtime.Port, msg: unknown): void {
   try {
     port.postMessage(msg);
@@ -348,6 +406,47 @@ chrome.runtime.onConnect.addListener((port) => {
           await upsertChatSession(newSession);
           safePostMessage(port, { type: 'SESSION', session: newSession });
         }
+
+        if (msg.type === 'SEND_COPILOT') {
+          const sessionId = msg.sessionId as string;
+          const content = msg.content as string;
+          const session = await getChatSession(sessionId);
+          if (!session) return;
+
+          const freshCode = await getFreshCode();
+
+          const userMsg: ChatMessage = { role: 'user', content, timestamp: Date.now() };
+          session.messages.push(userMsg);
+          await upsertChatSession(session);
+
+          const ctx = session.problemContext;
+          const copilotSystemPrompt = buildCopilotPrompt({
+            problemTitle: ctx?.title ?? 'Unknown Problem',
+            problemDifficulty: ctx?.difficulty ?? 'Medium',
+            problemTags: ctx?.topicTags ?? [],
+            problemStatement: ctx?.statement ?? '',
+            userCurrentCode: freshCode,
+          });
+
+          await streamAIResponseWithPrompt(port, session, copilotSystemPrompt);
+
+          // Extract code block from the assistant's response and write to editor
+          const lastMsg = session.messages[session.messages.length - 1];
+          if (lastMsg?.role === 'assistant') {
+            const code = extractCodeBlock(lastMsg.content);
+            if (code) {
+              try {
+                await injectCodeIntoEditor(code);
+                safePostMessage(port, { type: 'CODE_WRITTEN' });
+              } catch (err) {
+                safePostMessage(port, {
+                  type: 'CODE_WRITE_FAILED',
+                  reason: err instanceof Error ? err.message : String(err),
+                });
+              }
+            }
+          }
+        }
       } catch (err) {
         safePostMessage(port, {
           type: 'AI_ERROR',
@@ -392,8 +491,13 @@ addMessageListener('CONTENT_SUBMISSION_DETECTED', (msg) => {
   })();
 });
 
-addMessageListener('CONTENT_PROBLEM_CONTEXT', (msg) => {
+addMessageListener('CONTENT_PROBLEM_CONTEXT', (msg, sender) => {
   currentProblemContext = msg.context;
+  currentTabId = sender.tab?.id ?? null;
+  void chrome.storage.session.set({
+    currentProblemContext: msg.context,
+    currentTabId: sender.tab?.id ?? null,
+  });
 });
 
 addMessageListener('CONTENT_OPEN_POPUP', () => {
@@ -427,7 +531,10 @@ addMessageListener('POPUP_GET_STATUS', (_msg, _sender, sendResponse) => {
 });
 
 addMessageListener('POPUP_GET_CONTEXT', (_msg, _sender, sendResponse) => {
-  sendResponse({ type: 'BG_CONTEXT', context: currentProblemContext });
+  void (async () => {
+    await ensureContextHydrated();
+    sendResponse({ type: 'BG_CONTEXT', context: currentProblemContext });
+  })();
   return true;
 });
 
@@ -449,12 +556,12 @@ addMessageListener('POPUP_SET_MODULE', (msg) => {
   })();
 });
 
-addMessageListener('POPUP_OPEN_CHAT', (msg) => {
+addMessageListener('POPUP_OPEN_CHAT', (msg, _sender, sendResponse) => {
   void (async () => {
+    await ensureContextHydrated();
     const context = currentProblemContext;
     const problemSlug = context?.slug ?? null;
 
-    // Resume existing session for this problem, or create a new one
     let session = await getChatSessionByProblem(problemSlug);
 
     if (!session) {
@@ -467,7 +574,6 @@ addMessageListener('POPUP_OPEN_CHAT', (msg) => {
       };
     }
 
-    // Append the initial user message
     const userMsg: ChatMessage = {
       role: 'user',
       content: msg.initialMessage,
@@ -476,15 +582,9 @@ addMessageListener('POPUP_OPEN_CHAT', (msg) => {
     session.messages.push(userMsg);
     await upsertChatSession(session);
 
-    // Open the chat window
-    const chatUrl = chrome.runtime.getURL('src/chat/index.html') + '?sessionId=' + session.id;
-    await chrome.windows.create({
-      url: chatUrl,
-      type: 'popup',
-      width: 600,
-      height: 800,
-    });
+    sendResponse({ sessionId: session.id });
   })();
+  return true; // keep message channel open for async sendResponse
 });
 
 // ── Install hook ──────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
   "name": "Leetcode Buddy",
   "version": "0.2.0",
   "description": "Track LeetCode submissions, surface problem areas, and chat with an AI Socratic tutor.",
-  "permissions": ["storage", "webRequest", "windows"],
+  "permissions": ["storage", "webRequest", "windows", "scripting"],
   "host_permissions": [
     "https://leetcode.com/*",
     "https://api.anthropic.com/*"

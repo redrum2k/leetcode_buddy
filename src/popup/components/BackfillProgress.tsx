@@ -18,7 +18,7 @@ export function BackfillProgress() {
 
   if (progress.phase === 'error') {
     return (
-      <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-red-900/40 border border-red-700/50 text-xs text-red-300">
+      <div className="mx-4 mt-3 px-3 py-2.5 rounded-lg bg-[#ef4743]/10 border border-[#ef4743]/30 text-xs text-[#ef4743]">
         Sync failed: {progress.error ?? 'Unknown error'}
       </div>
     );
@@ -35,12 +35,15 @@ export function BackfillProgress() {
       : null;
 
   return (
-    <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-[#f89f1b]/10 border border-[#f89f1b]/30">
-      <p className="text-xs text-[#f89f1b] mb-1.5">{label}</p>
+    <div className="mx-4 mt-3 px-3 py-2.5 rounded-lg bg-[#ffa116]/[0.08] border border-[#ffa116]/25">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#ffa116] animate-pulse shrink-0" />
+        <p className="text-xs text-[#ffa116] font-medium">{label}</p>
+      </div>
       {pct != null && (
-        <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+        <div className="h-1 rounded-full bg-white/[0.08] overflow-hidden">
           <div
-            className="h-full rounded-full bg-[#f89f1b] transition-all duration-300"
+            className="h-full rounded-full bg-[#ffa116] transition-all duration-300"
             style={{ width: `${pct}%` }}
           />
         </div>

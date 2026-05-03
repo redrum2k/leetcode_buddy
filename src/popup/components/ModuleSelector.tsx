@@ -6,8 +6,6 @@ interface ModuleSelectorProps {
   onSelect: (slug: string | null) => void;
 }
 
-// Well-known LeetCode study plan slugs. These work with getStudyPlanDetail
-// without needing a separate "list all plans" API call.
 const KNOWN_PLANS = [
   { slug: 'leetcode-75', name: 'LeetCode 75' },
   { slug: 'top-interview-150', name: 'Top Interview 150' },
@@ -38,12 +36,14 @@ export function ModuleSelector({ currentSlug, onSelect }: ModuleSelectorProps) {
   }));
 
   return (
-    <div className="flex items-center gap-2">
-      <label className="text-xs text-white/50 shrink-0">Plan:</label>
+    <div className="flex items-center gap-2.5">
+      <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider shrink-0">
+        Plan
+      </label>
       <select
         value={currentSlug ?? ''}
         onChange={(e) => onSelect(e.target.value || null)}
-        className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#f89f1b]/60"
+        className="flex-1 bg-[#282828] border border-white/[0.08] rounded-md px-2.5 py-1.5 text-xs text-[#eff1f6] focus:outline-none focus:border-[#ffa116]/60 transition-colors appearance-none cursor-pointer"
       >
         <option value="">— None —</option>
         {merged.map((p) => (

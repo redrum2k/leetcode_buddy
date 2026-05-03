@@ -16,10 +16,10 @@ function StatCard({
   sub?: string;
 }) {
   return (
-    <div className="bg-white/5 rounded-lg px-3 py-2 flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-widest text-white/40">{label}</span>
-      <span className="text-xl font-semibold text-white">{value}</span>
-      {sub && <span className="text-[10px] text-white/40">{sub}</span>}
+    <div className="bg-[#282828] border border-white/[0.08] rounded-lg px-3 py-3 flex flex-col gap-0.5">
+      <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">{label}</span>
+      <span className="text-2xl font-bold text-[#eff1f6] leading-tight">{value}</span>
+      {sub && <span className="text-[10px] text-white/35 mt-0.5">{sub}</span>}
     </div>
   );
 }
@@ -29,7 +29,6 @@ export function StatsTab() {
   const [refreshKey, setRefreshKey] = useState(0);
   const { stats, loading } = useStats(prefs.selectedModuleSlug, refreshKey);
 
-  // Auto-trigger backfill on first open when never synced
   useEffect(() => {
     if (!prefsLoaded) return;
     if (prefs.lastBackfill === null && !prefs.backfillInProgress) {
@@ -37,7 +36,6 @@ export function StatsTab() {
     }
   }, [prefsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Refresh stats display when backfill finishes
   useEffect(() => {
     return addMessageListener('BG_BACKFILL_PROGRESS', (msg) => {
       if (msg.phase === 'done') setRefreshKey((k) => k + 1);
@@ -58,7 +56,7 @@ export function StatsTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-white/40 text-sm">
+      <div className="flex items-center justify-center h-full text-white/30 text-sm">
         Loading…
       </div>
     );
@@ -66,11 +64,11 @@ export function StatsTab() {
 
   if (!stats) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
-        <p className="text-white/60 text-sm">No data yet.</p>
+      <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
+        <p className="text-white/40 text-sm">No data yet — sync to get started.</p>
         <button
           onClick={handleRefresh}
-          className="px-4 py-2 rounded-lg bg-[#f89f1b] text-[#1a1a2e] text-sm font-semibold hover:bg-[#f89f1b]/90 transition-colors"
+          className="px-5 py-2 rounded-lg bg-[#ffa116] text-[#1a1a1a] text-sm font-bold hover:bg-[#ffa116]/90 transition-colors"
         >
           Sync Now
         </button>
@@ -79,55 +77,62 @@ export function StatsTab() {
   }
 
   const planPct = stats.planProgress
-    ? Math.round(
-        (stats.planProgress.solved / Math.max(1, stats.planProgress.total)) * 100,
-      )
+    ? Math.round((stats.planProgress.solved / Math.max(1, stats.planProgress.total)) * 100)
     : 0;
 
+  const diffRows = [
+    { label: 'Easy', value: stats.easySolved, color: '#00b8a3' },
+    { label: 'Medium', value: stats.mediumSolved, color: '#ffc01e' },
+    { label: 'Hard', value: stats.hardSolved, color: '#ef4743' },
+  ];
+
   return (
-    <div className="p-4 flex flex-col gap-4">
+    <div className="p-4 flex flex-col gap-3">
       <BackfillProgress />
 
       <ModuleSelector currentSlug={prefs.selectedModuleSlug} onSelect={handleModuleChange} />
 
+      {/* Plan progress card */}
       {stats.activePlan && stats.planProgress && (
-        <div className="bg-white/5 rounded-lg p-3 flex flex-col gap-2">
+        <div className="bg-[#282828] border border-white/[0.08] rounded-lg p-3 flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-white/80 truncate max-w-[200px]">
+            <span className="text-xs font-semibold text-[#eff1f6] truncate max-w-[200px]">
               {stats.activePlan.name}
             </span>
-            <span className="text-xs text-[#f89f1b] font-semibold shrink-0 ml-2">
-              {stats.planProgress.solved}/{stats.planProgress.total}
+            <span className="text-xs font-bold text-[#ffa116] shrink-0 ml-2">
+              {stats.planProgress.solved}
+              <span className="text-white/30 font-normal"> / {stats.planProgress.total}</span>
             </span>
           </div>
           <ProgressBar value={planPct} />
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 gap-2.5">
         <StatCard label="Total Submissions" value={stats.totalSubmissions} />
         <StatCard
           label="Accepted"
           value={stats.acceptedSubmissions}
-          sub={`${stats.acceptanceRate}% acceptance`}
+          sub={`${stats.acceptanceRate}% acceptance rate`}
         />
       </div>
 
-      <div className="bg-white/5 rounded-lg p-3 flex flex-col gap-2">
-        <span className="text-[10px] uppercase tracking-widest text-white/40">
+      {/* Difficulty breakdown */}
+      <div className="bg-[#282828] border border-white/[0.08] rounded-lg p-3">
+        <p className="text-[10px] uppercase tracking-widest text-white/40 font-semibold mb-3">
           Solved by Difficulty
-        </span>
-        <div className="flex gap-4 justify-around text-center">
-          {[
-            { label: 'Easy', value: stats.easySolved, color: '#00b8a3' },
-            { label: 'Medium', value: stats.mediumSolved, color: '#ffc01e' },
-            { label: 'Hard', value: stats.hardSolved, color: '#ff375f' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="flex flex-col items-center gap-0.5">
-              <span className="text-xl font-semibold" style={{ color }}>
-                {value}
+        </p>
+        <div className="flex gap-2 justify-around text-center">
+          {diffRows.map(({ label, value, color }) => (
+            <div key={label} className="flex flex-col items-center gap-1">
+              <span className="text-2xl font-bold" style={{ color }}>{value}</span>
+              <span
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ color, backgroundColor: color + '20' }}
+              >
+                {label}
               </span>
-              <span className="text-[10px] text-white/40">{label}</span>
             </div>
           ))}
         </div>
@@ -136,7 +141,7 @@ export function StatsTab() {
       <button
         onClick={handleRefresh}
         disabled={prefs.backfillInProgress}
-        className="w-full py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white/70 hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-2 rounded-lg bg-[#282828] border border-white/[0.08] text-xs text-white/50 hover:text-white/80 hover:border-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
       >
         {prefs.backfillInProgress ? 'Syncing…' : 'Refresh Data'}
       </button>
