@@ -5,7 +5,7 @@ import type { ChatMessage } from '@/types';
 
 function UserBubble({ content }: { content: string }) {
   return (
-    <div className="max-w-[80%] rounded-[20px] rounded-br-[4px] px-3 py-2.5 bg-[#ffa116]/15 border border-[#ffa116]/20 text-[#eff1f6] text-sm whitespace-pre-wrap">
+    <div className="max-w-[80%] rounded-[20px] rounded-br-[4px] px-3 py-2.5 bg-theme-accent-tint border border-[var(--color-accent-tint)] text-theme-text text-sm whitespace-pre-wrap">
       {content}
     </div>
   );
@@ -14,16 +14,16 @@ function UserBubble({ content }: { content: string }) {
 function ThinkingDots() {
   return (
     <div className="flex gap-1 py-1 px-0.5">
-      <span className="w-1.5 h-1.5 rounded-full bg-[#ffa116]/50 animate-bounce [animation-delay:-0.3s]" />
-      <span className="w-1.5 h-1.5 rounded-full bg-[#ffa116]/50 animate-bounce [animation-delay:-0.15s]" />
-      <span className="w-1.5 h-1.5 rounded-full bg-[#ffa116]/50 animate-bounce" />
+      <span className="w-1.5 h-1.5 rounded-full bg-theme-accent animate-bounce [animation-delay:-0.3s]" />
+      <span className="w-1.5 h-1.5 rounded-full bg-theme-accent animate-bounce [animation-delay:-0.15s]" />
+      <span className="w-1.5 h-1.5 rounded-full bg-theme-accent animate-bounce" />
     </div>
   );
 }
 
 function AssistantBubble({ content, showDots }: { content: string; showDots?: boolean }) {
   return (
-    <div className="max-w-[85%] rounded-[20px] rounded-bl-[4px] px-3 py-2.5 bg-[#282828] border border-white/[0.08] text-[#eff1f6] text-sm">
+    <div className="max-w-[85%] rounded-[20px] rounded-bl-[4px] px-3 py-2.5 bg-theme-surface border border-[var(--color-border)] text-theme-text text-sm">
       {showDots ? (
         <ThinkingDots />
       ) : (
@@ -34,7 +34,7 @@ function AssistantBubble({ content, showDots }: { content: string; showDots?: bo
             components={{
               pre({ children }) {
                 return (
-                  <pre className="bg-[#1a1a1a] border border-white/[0.08] rounded-lg p-3 overflow-x-auto text-xs my-2 font-mono">
+                  <pre className="bg-theme-base border border-[var(--color-border)] rounded-lg p-3 overflow-x-auto text-xs my-2 font-mono">
                     {children}
                   </pre>
                 );
@@ -45,7 +45,7 @@ function AssistantBubble({ content, showDots }: { content: string; showDots?: bo
                   return <code className={className}>{children}</code>;
                 }
                 return (
-                  <code className="bg-white/[0.08] rounded px-1.5 py-0.5 text-xs font-mono text-[#ffa116]/90">
+                  <code className="bg-[var(--color-border)] rounded px-1.5 py-0.5 text-xs font-mono text-theme-accent">
                     {children}
                   </code>
                 );
@@ -74,7 +74,7 @@ export function Message({ msg, streaming }: MessageProps) {
   return (
     <div className={`flex items-end gap-2 mb-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
-        <div className="w-7 h-7 rounded-full bg-[#ffa116] flex items-center justify-center text-[10px] font-bold text-[#1a1a1a] shrink-0 mb-0.5">
+        <div className="w-7 h-7 rounded-full bg-theme-accent flex items-center justify-center text-[10px] font-bold text-theme-on-accent shrink-0 mb-0.5">
           LB
         </div>
       )}

@@ -35,15 +35,15 @@ export function BackfillProgress() {
       : null;
 
   return (
-    <div className="mx-4 mt-3 px-3 py-2.5 rounded-lg bg-[#ffa116]/[0.08] border border-[#ffa116]/25">
+    <div className="mx-4 mt-3 px-3 py-2.5 rounded-lg bg-theme-accent-tint border border-[var(--color-accent-tint)]">
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#ffa116] animate-pulse shrink-0" />
-        <p className="text-xs text-[#ffa116] font-medium">{label}</p>
+        <span className="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse shrink-0" />
+        <p className="text-xs text-theme-accent font-medium">{label}</p>
       </div>
       {pct != null && (
-        <div className="h-1 rounded-full bg-white/[0.08] overflow-hidden">
+        <div className="h-1 rounded-full bg-[var(--color-border)] overflow-hidden">
           <div
-            className="h-full rounded-full bg-[#ffa116] transition-all duration-300"
+            className="h-full rounded-full bg-theme-accent transition-all duration-300"
             style={{ width: `${pct}%` }}
           />
         </div>

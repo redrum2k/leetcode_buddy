@@ -43,11 +43,11 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
   const [codeWriteError, setCodeWriteError] = useState('');
 
   const portRef = useRef<chrome.runtime.Port | null>(null);
-  const fullContentRef = useRef('');   // total received from API
-  const charQueueRef = useRef<string[]>([]); // pending chars for typewriter
-  const displayRef = useRef('');       // chars shown so far
+  const fullContentRef = useRef('');
+  const charQueueRef = useRef<string[]>([]);
+  const displayRef = useRef('');
   const typeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const apiDoneRef = useRef(false);    // true once AI_DONE received
+  const apiDoneRef = useRef(false);
   const modeRef = useRef<ChatMode>('socratic');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -109,7 +109,6 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
       }
       if (msg.type === 'AI_DONE') {
         apiDoneRef.current = true;
-        // If interval isn't running (no chunks or already drained), finalize immediately
         if (typeIntervalRef.current === null) {
           const content = fullContentRef.current;
           const assistantMsg: ChatMessage = { role: 'assistant', content, timestamp: Date.now() };
@@ -237,16 +236,16 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
   const problemTitle = session?.problemContext?.title;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-[#1a1a1a]">
+    <div className="flex flex-col flex-1 min-h-0 bg-theme-base">
       {/* Chat header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.08] shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border)] shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-full bg-[#ffa116] flex items-center justify-center text-[10px] font-bold text-[#1a1a1a] shrink-0">
+          <div className="w-6 h-6 rounded-full bg-theme-accent flex items-center justify-center text-[10px] font-bold text-theme-on-accent shrink-0">
             LB
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <p className="text-xs font-bold text-[#ffa116]">Buddy Chat</p>
+              <p className="text-xs font-bold text-theme-accent">Buddy Chat</p>
               {mode === 'copilot' && (
                 <span className="text-[9px] font-bold text-[#00b8a3] bg-[#00b8a3]/10 border border-[#00b8a3]/30 px-1.5 py-0.5 rounded-full">
                   Copilot
@@ -254,7 +253,7 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
               )}
             </div>
             {problemTitle && (
-              <p className="text-[10px] text-white/30 truncate max-w-[180px]">{problemTitle}</p>
+              <p className="text-[10px] text-[var(--color-muted)] truncate max-w-[180px]">{problemTitle}</p>
             )}
           </div>
         </div>
@@ -262,20 +261,20 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
           {mode === 'copilot' && (
             <button
               onClick={() => setMode('socratic')}
-              className="text-[10px] text-white/35 hover:text-white/70 transition-colors px-2 py-1 rounded hover:bg-white/[0.06]"
+              className="text-[10px] text-[var(--color-muted)] hover:text-theme-text transition-colors px-2 py-1 rounded hover:bg-[var(--color-border)]"
             >
               ← Socratic
             </button>
           )}
           <button
             onClick={handleNewConversation}
-            className="text-[10px] text-white/35 hover:text-white/70 transition-colors px-2 py-1 rounded hover:bg-white/[0.06]"
+            className="text-[10px] text-[var(--color-muted)] hover:text-theme-text transition-colors px-2 py-1 rounded hover:bg-[var(--color-border)]"
           >
             New chat
           </button>
           <button
             onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center text-white/30 hover:text-white/80 hover:bg-white/[0.08] rounded transition-colors text-sm"
+            className="w-6 h-6 flex items-center justify-center text-[var(--color-muted)] hover:text-theme-text hover:bg-[var(--color-border)] rounded transition-colors text-sm"
           >
             ✕
           </button>
@@ -286,7 +285,7 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {allMessages.length === 0 && !isStreaming && !error && mode !== 'offer' && (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
-            <p className="text-white/30 text-sm">
+            <p className="text-[var(--color-muted)] text-sm">
               {problemTitle ? `Ask me about "${problemTitle}"` : 'Ask me anything'}
             </p>
           </div>
@@ -299,10 +298,10 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
         {/* Copilot offer */}
         {mode === 'offer' && (
           <div className="flex items-end gap-2 mb-3">
-            <div className="w-7 h-7 rounded-full bg-[#ffa116] flex items-center justify-center text-[10px] font-bold text-[#1a1a1a] shrink-0 mb-0.5">
+            <div className="w-7 h-7 rounded-full bg-theme-accent flex items-center justify-center text-[10px] font-bold text-theme-on-accent shrink-0 mb-0.5">
               LB
             </div>
-            <div className="max-w-[85%] rounded-[20px] rounded-bl-[4px] px-3 py-3 bg-[#282828] border border-white/[0.08] text-[#eff1f6] text-sm">
+            <div className="max-w-[85%] rounded-[20px] rounded-bl-[4px] px-3 py-3 bg-theme-surface border border-[var(--color-border)] text-theme-text text-sm">
               <p className="mb-3 text-sm leading-snug">
                 Looks like you want code written. Switch to{' '}
                 <span className="text-[#00b8a3] font-bold">Copilot mode</span>?{' '}
@@ -317,7 +316,7 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
                 </button>
                 <button
                   onClick={handleRejectCopilot}
-                  className="flex-1 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white/50 text-xs hover:bg-white/[0.1] transition-colors"
+                  className="flex-1 py-1.5 rounded-lg bg-[var(--color-border)] border border-[var(--color-border)] text-[var(--color-muted)] text-xs hover:bg-[var(--color-border)] transition-colors"
                 >
                   Stay Socratic
                 </button>
@@ -356,7 +355,7 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-white/[0.08] px-3 py-2.5 shrink-0 bg-[#1a1a1a]">
+      <div className="border-t border-[var(--color-border)] px-3 py-2.5 shrink-0 bg-theme-base">
         <div className="flex gap-2 items-end">
           <textarea
             value={input}
@@ -368,7 +367,7 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
                 : 'Ask Buddy… (Shift+Enter for newline)'
             }
             rows={1}
-            className="flex-1 bg-[#282828] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-[#eff1f6] placeholder-white/20 focus:outline-none focus:border-[#ffa116]/50 resize-none min-h-[36px] max-h-[100px] leading-5 transition-colors"
+            className="flex-1 bg-theme-surface border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm text-theme-text placeholder-[var(--color-muted)] focus:outline-none focus:border-theme-accent resize-none min-h-[36px] max-h-[100px] leading-5 transition-colors"
             style={{ height: 'auto' }}
             onInput={(e) => {
               const el = e.currentTarget;
@@ -383,7 +382,7 @@ export function ChatView({ sessionId, onClose }: ChatViewProps) {
             className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold disabled:opacity-35 disabled:cursor-not-allowed transition-colors shrink-0 ${
               mode === 'copilot'
                 ? 'bg-[#00b8a3] text-white hover:bg-[#00b8a3]/90'
-                : 'bg-[#ffa116] text-[#1a1a1a] hover:bg-[#ffa116]/90'
+                : 'bg-theme-accent text-theme-on-accent hover:bg-theme-accent'
             }`}
           >
             ↑

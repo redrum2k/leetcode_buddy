@@ -42,10 +42,10 @@ export function ChatBar({ onOpenChat }: ChatBarProps) {
   };
 
   return (
-    <div className="border-t border-white/[0.08] px-3 py-2.5 bg-[#1a1a1a] shrink-0">
+    <div className="border-t border-[var(--color-border)] px-3 py-2.5 bg-theme-base shrink-0">
       {context && (
-        <p className="text-[10px] text-white/30 mb-1.5 truncate">
-          <span className="text-[#ffa116]/60">●</span>{' '}
+        <p className="text-[10px] text-[var(--color-muted)] mb-1.5 truncate">
+          <span className="text-theme-accent">●</span>{' '}
           {context.title}
         </p>
       )}
@@ -57,12 +57,12 @@ export function ChatBar({ onOpenChat }: ChatBarProps) {
           onKeyDown={handleKeyDown}
           placeholder={context ? `Ask about "${context.title}"…` : 'Ask Buddy…'}
           disabled={sending}
-          className="flex-1 bg-[#282828] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-[#eff1f6] placeholder-white/20 focus:outline-none focus:border-[#ffa116]/50 disabled:opacity-60 transition-colors"
+          className="flex-1 bg-theme-surface border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs text-theme-text placeholder-[var(--color-muted)] focus:outline-none focus:border-theme-accent disabled:opacity-60 transition-colors"
         />
         <button
           onClick={() => void handleSend()}
           disabled={!message.trim() || sending}
-          className="px-3 py-2 rounded-lg bg-[#ffa116] text-[#1a1a1a] text-xs font-bold disabled:opacity-35 disabled:cursor-not-allowed hover:bg-[#ffa116]/90 transition-colors shrink-0"
+          className="px-3 py-2 rounded-lg bg-theme-accent text-theme-on-accent text-xs font-bold disabled:opacity-35 disabled:cursor-not-allowed hover:bg-theme-accent transition-colors shrink-0"
         >
           →
         </button>

@@ -40,11 +40,17 @@ export interface StudyPlan {
   lastFetched: number;
 }
 
+export type ThemePreference = 'auto' | 'light' | 'dark';
+export type FontSize = 'small' | 'medium' | 'large';
+
 export interface UserPrefs {
   selectedModuleSlug: string | null;
   username: string | null;
   lastBackfill: number | null;
   backfillInProgress: boolean;
+  theme: ThemePreference;
+  highContrast: boolean;
+  fontSize: FontSize;
 }
 
 // ── AI Chat ───────────────────────────────────────────────────────────────────

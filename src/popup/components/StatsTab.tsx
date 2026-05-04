@@ -16,10 +16,10 @@ function StatCard({
   sub?: string;
 }) {
   return (
-    <div className="bg-[#282828] border border-white/[0.08] rounded-lg px-3 py-3 flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">{label}</span>
-      <span className="text-2xl font-bold text-[#eff1f6] leading-tight">{value}</span>
-      {sub && <span className="text-[10px] text-white/35 mt-0.5">{sub}</span>}
+    <div className="bg-theme-surface border border-[var(--color-border)] rounded-lg px-3 py-3 flex flex-col gap-0.5">
+      <span className="text-[10px] uppercase tracking-widest text-[var(--color-muted)] font-semibold">{label}</span>
+      <span className="text-2xl font-bold text-theme-text leading-tight">{value}</span>
+      {sub && <span className="text-[10px] text-[var(--color-muted)] mt-0.5">{sub}</span>}
     </div>
   );
 }
@@ -56,7 +56,7 @@ export function StatsTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-white/30 text-sm">
+      <div className="flex items-center justify-center h-full text-[var(--color-muted)] text-sm">
         Loading…
       </div>
     );
@@ -65,10 +65,10 @@ export function StatsTab() {
   if (!stats) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
-        <p className="text-white/40 text-sm">No data yet — sync to get started.</p>
+        <p className="text-[var(--color-muted)] text-sm">No data yet — sync to get started.</p>
         <button
           onClick={handleRefresh}
-          className="px-5 py-2 rounded-lg bg-[#ffa116] text-[#1a1a1a] text-sm font-bold hover:bg-[#ffa116]/90 transition-colors"
+          className="px-5 py-2 rounded-lg bg-theme-accent text-theme-on-accent text-sm font-bold hover:bg-theme-accent transition-colors"
         >
           Sync Now
         </button>
@@ -94,14 +94,14 @@ export function StatsTab() {
 
       {/* Plan progress card */}
       {stats.activePlan && stats.planProgress && (
-        <div className="bg-[#282828] border border-white/[0.08] rounded-lg p-3 flex flex-col gap-2.5">
+        <div className="bg-theme-surface border border-[var(--color-border)] rounded-lg p-3 flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#eff1f6] truncate max-w-[200px]">
+            <span className="text-xs font-semibold text-theme-text truncate max-w-[200px]">
               {stats.activePlan.name}
             </span>
-            <span className="text-xs font-bold text-[#ffa116] shrink-0 ml-2">
+            <span className="text-xs font-bold text-theme-accent shrink-0 ml-2">
               {stats.planProgress.solved}
-              <span className="text-white/30 font-normal"> / {stats.planProgress.total}</span>
+              <span className="text-[var(--color-muted)] font-normal"> / {stats.planProgress.total}</span>
             </span>
           </div>
           <ProgressBar value={planPct} />
@@ -119,8 +119,8 @@ export function StatsTab() {
       </div>
 
       {/* Difficulty breakdown */}
-      <div className="bg-[#282828] border border-white/[0.08] rounded-lg p-3">
-        <p className="text-[10px] uppercase tracking-widest text-white/40 font-semibold mb-3">
+      <div className="bg-theme-surface border border-[var(--color-border)] rounded-lg p-3">
+        <p className="text-[10px] uppercase tracking-widest text-[var(--color-muted)] font-semibold mb-3">
           Solved by Difficulty
         </p>
         <div className="flex gap-2 justify-around text-center">
@@ -141,7 +141,7 @@ export function StatsTab() {
       <button
         onClick={handleRefresh}
         disabled={prefs.backfillInProgress}
-        className="w-full py-2 rounded-lg bg-[#282828] border border-white/[0.08] text-xs text-white/50 hover:text-white/80 hover:border-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+        className="w-full py-2 rounded-lg bg-theme-surface border border-[var(--color-border)] text-xs text-[var(--color-muted)] hover:text-theme-text hover:border-[var(--color-border)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
       >
         {prefs.backfillInProgress ? 'Syncing…' : 'Refresh Data'}
       </button>

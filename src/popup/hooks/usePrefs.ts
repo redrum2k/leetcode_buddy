@@ -6,6 +6,9 @@ const DEFAULTS: UserPrefs = {
   username: null,
   lastBackfill: null,
   backfillInProgress: false,
+  theme: 'auto',
+  highContrast: false,
+  fontSize: 'medium',
 };
 
 export function usePrefs() {

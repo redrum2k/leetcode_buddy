@@ -63,7 +63,7 @@ function ProblemLink({ slug, title }: { slug: string; title: string }) {
       href={`https://leetcode.com/problems/${slug}/`}
       target="_blank"
       rel="noopener noreferrer"
-      className="hover:text-[#ffa116] transition-colors truncate"
+      className="hover:text-theme-accent transition-colors truncate"
     >
       {title}
     </a>
@@ -75,7 +75,7 @@ const CAP = 10;
 function SectionHeading({ children, count }: { children: string; count: number }) {
   if (count === 0) return null;
   return (
-    <p className="text-[9px] uppercase tracking-widest text-white/25 font-semibold mb-1.5 px-4 mt-2">
+    <p className="text-[9px] uppercase tracking-widest text-[var(--color-muted)] font-semibold mb-1.5 px-4 mt-2">
       {children}
     </p>
   );
@@ -112,27 +112,27 @@ function TopicRow({ area, allSubmissions, isExpanded, onToggle }: TopicRowProps)
   const visiblePractice = showMorePractice ? practice : practice.slice(0, CAP);
 
   return (
-    <div className="border-b border-white/[0.06] last:border-0">
+    <div className="border-b border-[var(--color-border)] last:border-0">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.04] transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--color-border)] transition-colors text-left"
       >
         <div className="flex items-center gap-3">
           {/* Pain score badge */}
-          <div className="w-8 h-8 rounded-lg bg-[#ffa116]/10 border border-[#ffa116]/20 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-[#ffa116]">{area.painScore}</span>
+          <div className="w-8 h-8 rounded-lg bg-theme-accent-tint border border-[var(--color-accent-tint)] flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-theme-accent">{area.painScore}</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-[#eff1f6] capitalize leading-tight">
+            <p className="text-sm font-semibold text-theme-text capitalize leading-tight">
               {area.topic.replace(/-/g, ' ')}
             </p>
-            <p className="text-[10px] text-white/35 mt-0.5">
+            <p className="text-[10px] text-[var(--color-muted)] mt-0.5">
               {area.uniqueProblemsFailed} problem{area.uniqueProblemsFailed !== 1 ? 's' : ''} failed
             </p>
           </div>
         </div>
         <svg
-          className={`w-4 h-4 text-white/25 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-[var(--color-muted)] transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -148,14 +148,14 @@ function TopicRow({ area, allSubmissions, isExpanded, onToggle }: TopicRowProps)
           isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
-        <div className="overflow-hidden bg-[#1e1e1e]">
-          <div className="pb-2 border-t border-white/[0.05]">
+        <div className="overflow-hidden bg-theme-surface">
+          <div className="pb-2 border-t border-[var(--color-border)]">
             {!loaded && (
-              <p className="px-4 py-3 text-xs text-white/25 italic">Loading…</p>
+              <p className="px-4 py-3 text-xs text-[var(--color-muted)] italic">Loading…</p>
             )}
 
             {loaded && revisit.length === 0 && practice.length === 0 && (
-              <p className="px-4 py-3 text-xs text-white/25 italic">
+              <p className="px-4 py-3 text-xs text-[var(--color-muted)] italic">
                 No similar problems found — try syncing more submissions.
               </p>
             )}
@@ -166,7 +166,7 @@ function TopicRow({ area, allSubmissions, isExpanded, onToggle }: TopicRowProps)
                 {visibleRevisit.map((p) => (
                   <div
                     key={p.slug}
-                    className="flex items-center justify-between px-4 py-1.5 hover:bg-white/[0.04] transition-colors"
+                    className="flex items-center justify-between px-4 py-1.5 hover:bg-[var(--color-border)] transition-colors"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span
@@ -175,11 +175,11 @@ function TopicRow({ area, allSubmissions, isExpanded, onToggle }: TopicRowProps)
                       >
                         {p.difficulty[0]}
                       </span>
-                      <span className="text-xs text-white/70 min-w-0">
+                      <span className="text-xs text-[var(--color-muted)] min-w-0">
                         <ProblemLink slug={p.slug} title={p.title} />
                       </span>
                     </div>
-                    <span className="text-[10px] text-white/25 shrink-0 ml-2 tabular-nums">
+                    <span className="text-[10px] text-[var(--color-muted)] shrink-0 ml-2 tabular-nums">
                       {p.failCount}× failed
                     </span>
                   </div>
@@ -187,7 +187,7 @@ function TopicRow({ area, allSubmissions, isExpanded, onToggle }: TopicRowProps)
                 {revisit.length > CAP && (
                   <button
                     onClick={() => setShowMoreRevisit((v) => !v)}
-                    className="px-4 py-1 text-[10px] text-[#ffa116]/60 hover:text-[#ffa116] transition-colors"
+                    className="px-4 py-1 text-[10px] text-theme-accent hover:text-theme-accent transition-colors"
                   >
                     {showMoreRevisit ? 'Show less' : `+${revisit.length - CAP} more`}
                   </button>
@@ -205,7 +205,7 @@ function TopicRow({ area, allSubmissions, isExpanded, onToggle }: TopicRowProps)
                   return (
                     <div
                       key={q.titleSlug}
-                      className="flex items-center gap-2 px-4 py-1.5 hover:bg-white/[0.04] transition-colors min-w-0"
+                      className="flex items-center gap-2 px-4 py-1.5 hover:bg-[var(--color-border)] transition-colors min-w-0"
                     >
                       <span
                         className="text-[10px] font-bold w-4 text-center shrink-0"
@@ -213,7 +213,7 @@ function TopicRow({ area, allSubmissions, isExpanded, onToggle }: TopicRowProps)
                       >
                         {diff[0]}
                       </span>
-                      <span className="text-xs text-white/70 min-w-0">
+                      <span className="text-xs text-[var(--color-muted)] min-w-0">
                         <ProblemLink slug={q.titleSlug} title={q.title} />
                       </span>
                     </div>
@@ -222,7 +222,7 @@ function TopicRow({ area, allSubmissions, isExpanded, onToggle }: TopicRowProps)
                 {practice.length > CAP && (
                   <button
                     onClick={() => setShowMorePractice((v) => !v)}
-                    className="px-4 py-1 text-[10px] text-[#ffa116]/60 hover:text-[#ffa116] transition-colors"
+                    className="px-4 py-1 text-[10px] text-theme-accent hover:text-theme-accent transition-colors"
                   >
                     {showMorePractice ? 'Show less' : `+${practice.length - CAP} more`}
                   </button>
@@ -256,13 +256,13 @@ export function ProblemAreasTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-white/30 text-sm">Loading…</div>
+      <div className="flex items-center justify-center h-full text-[var(--color-muted)] text-sm">Loading…</div>
     );
   }
 
   if (areas.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-white/30 text-sm px-6 text-center">
+      <div className="flex items-center justify-center h-full text-[var(--color-muted)] text-sm px-6 text-center">
         No failed submissions yet — keep grinding!
       </div>
     );
@@ -270,7 +270,7 @@ export function ProblemAreasTab() {
 
   return (
     <div className="flex flex-col">
-      <p className="px-4 pt-3 pb-2 text-[10px] uppercase tracking-widest text-white/25 font-semibold">
+      <p className="px-4 pt-3 pb-2 text-[10px] uppercase tracking-widest text-[var(--color-muted)] font-semibold">
         Topics sorted by pain score
       </p>
       {areas.map((area) => (

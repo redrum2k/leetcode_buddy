@@ -5,6 +5,8 @@ import { SolvedTab } from './components/SolvedTab';
 import { ChatBar } from './components/ChatBar';
 import { ChatView } from './components/ChatView';
 import { SettingsPanel } from './components/SettingsPanel';
+import { usePrefs } from './hooks/usePrefs';
+import { useTheme } from './hooks/useTheme';
 
 type Tab = 'stats' | 'areas' | 'solved';
 
@@ -18,6 +20,9 @@ const STORAGE_KEY_TAB = 'lb_lastTab';
 const STORAGE_KEY_CHAT = 'lb_lastChatSessionId';
 
 export function App() {
+  const { prefs } = usePrefs();
+  useTheme(prefs);
+
   const [activeTab, setActiveTab] = useState<Tab>('stats');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
@@ -47,20 +52,19 @@ export function App() {
     void chrome.storage.local.set({ [STORAGE_KEY_CHAT]: null });
   };
 
-  // Blank screen while restoring state to avoid flash
-  if (!loaded) return <div className="w-full h-screen bg-[#1a1a1a]" />;
+  if (!loaded) return <div className="w-full h-screen bg-theme-base" />;
 
   return (
-    <div className="w-full h-screen flex flex-col bg-[#1a1a1a] text-[#eff1f6] font-sans overflow-hidden">
+    <div className="w-full h-screen flex flex-col bg-theme-base text-theme-text font-sans overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-white/[0.08] shrink-0 bg-[#1a1a1a]">
+      <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-[var(--color-border)] shrink-0 bg-theme-base">
         <div
-          className="w-7 h-7 rounded-full bg-[#ffa116] flex items-center justify-center text-[11px] font-bold text-[#1a1a1a] shrink-0 select-none"
+          className="w-7 h-7 rounded-full bg-theme-accent flex items-center justify-center text-[11px] font-bold text-theme-on-accent shrink-0 select-none"
           aria-hidden="true"
         >
           LB
         </div>
-        <span className="text-sm font-semibold text-[#ffa116] flex-1 tracking-wide">
+        <span className="text-sm font-semibold text-theme-accent flex-1 tracking-wide">
           Leetcode Buddy
         </span>
         {!chatSessionId && (
@@ -68,8 +72,8 @@ export function App() {
             onClick={() => setSettingsOpen((v) => !v)}
             className={`w-7 h-7 rounded-md flex items-center justify-center text-base transition-colors ${
               settingsOpen
-                ? 'text-[#ffa116] bg-[#ffa116]/10'
-                : 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]'
+                ? 'text-theme-accent bg-theme-accent-tint'
+                : 'text-[var(--color-muted)] hover:text-theme-text hover:bg-[var(--color-border)]'
             }`}
             title="Settings"
           >
@@ -86,8 +90,8 @@ export function App() {
         </div>
       ) : (
         <>
-          {/* Tab bar — LeetCode style: underline, no fill */}
-          <div className="flex border-b border-white/[0.08] shrink-0 bg-[#1a1a1a]">
+          {/* Tab bar */}
+          <div className="flex border-b border-[var(--color-border)] shrink-0 bg-theme-base">
             {(['stats', 'areas', 'solved'] as Tab[]).map((tab) => (
               <button
                 key={tab}
@@ -95,8 +99,8 @@ export function App() {
                 className={[
                   'flex-1 py-2.5 text-xs font-semibold uppercase tracking-widest transition-colors border-b-2',
                   activeTab === tab
-                    ? 'text-white border-[#ffa116]'
-                    : 'text-white/40 border-transparent hover:text-white/70 hover:bg-white/[0.03]',
+                    ? 'text-theme-text border-theme-accent'
+                    : 'text-[var(--color-muted)] border-transparent hover:text-theme-text hover:bg-[var(--color-border)]',
                 ].join(' ')}
               >
                 {TAB_LABELS[tab]}

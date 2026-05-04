@@ -58,13 +58,13 @@ export function SolvedTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-white/30 text-sm">Loading…</div>
+      <div className="flex items-center justify-center h-full text-[var(--color-muted)] text-sm">Loading…</div>
     );
   }
 
   if (allSolved.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-white/30 text-sm px-6 text-center">
+      <div className="flex items-center justify-center h-full text-[var(--color-muted)] text-sm px-6 text-center">
         No solved problems yet — click Refresh Data on the Stats tab.
       </div>
     );
@@ -76,7 +76,7 @@ export function SolvedTab() {
       <div className="flex gap-1.5 px-4 pt-3 pb-2.5 shrink-0">
         {(['All', 'Easy', 'Medium', 'Hard'] as Filter[]).map((f) => {
           const active = filter === f;
-          const color = f !== 'All' ? DIFF_COLOR[f as Difficulty] : '#ffa116';
+          const diffColor = f !== 'All' ? DIFF_COLOR[f as Difficulty] : '#ffa116';
           return (
             <button
               key={f}
@@ -84,12 +84,8 @@ export function SolvedTab() {
               className="flex-1 py-1 rounded-md text-[11px] font-semibold transition-all"
               style={
                 active
-                  ? { backgroundColor: color + '22', color, border: `1px solid ${color}50` }
-                  : {
-                      backgroundColor: 'transparent',
-                      color: 'rgba(239,241,246,0.35)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                    }
+                  ? { backgroundColor: diffColor + '22', color: diffColor, border: `1px solid ${diffColor}50` }
+                  : { backgroundColor: 'transparent', color: 'var(--color-muted)', border: '1px solid var(--color-border)' }
               }
             >
               {f === 'All' ? `All (${allSolved.length})` : f}
@@ -101,7 +97,7 @@ export function SolvedTab() {
       {/* Problem list */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-white/30 text-sm">
+          <div className="flex items-center justify-center h-24 text-[var(--color-muted)] text-sm">
             No {filter} problems solved yet
           </div>
         ) : (
@@ -111,13 +107,13 @@ export function SolvedTab() {
               href={`https://leetcode.com/problems/${p.slug}/`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.05] last:border-0 hover:bg-white/[0.04] transition-colors group"
+              className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-border)] transition-colors group"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-white/20 text-[10px] w-5 text-right shrink-0 tabular-nums font-mono">
+                <span className="text-[var(--color-muted)] text-[10px] w-5 text-right shrink-0 tabular-nums font-mono">
                   {safePage * PAGE_SIZE + i + 1}
                 </span>
-                <span className="text-sm text-[#eff1f6] truncate group-hover:text-[#ffa116] transition-colors">
+                <span className="text-sm text-theme-text truncate group-hover:text-theme-accent transition-colors">
                   {p.title}
                 </span>
               </div>
@@ -128,7 +124,7 @@ export function SolvedTab() {
                 >
                   {p.difficulty}
                 </span>
-                <span className="text-[10px] text-white/25 tabular-nums">
+                <span className="text-[10px] text-[var(--color-muted)] tabular-nums">
                   {new Date(p.solvedAt).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -142,21 +138,21 @@ export function SolvedTab() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-2 border-t border-white/[0.08] shrink-0 bg-[#1a1a1a]">
+        <div className="flex items-center justify-between px-4 py-2 border-t border-[var(--color-border)] shrink-0 bg-theme-base">
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={safePage === 0}
-            className="text-xs text-white/40 hover:text-white disabled:text-white/15 disabled:cursor-not-allowed px-2 py-1 rounded transition-colors hover:bg-white/[0.06]"
+            className="text-xs text-[var(--color-muted)] hover:text-theme-text disabled:opacity-40 disabled:cursor-not-allowed px-2 py-1 rounded transition-colors hover:bg-[var(--color-border)]"
           >
             ← Prev
           </button>
-          <span className="text-[10px] text-white/30">
+          <span className="text-[10px] text-[var(--color-muted)]">
             {safePage + 1} / {totalPages} · {filtered.length} problems
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={safePage >= totalPages - 1}
-            className="text-xs text-white/40 hover:text-white disabled:text-white/15 disabled:cursor-not-allowed px-2 py-1 rounded transition-colors hover:bg-white/[0.06]"
+            className="text-xs text-[var(--color-muted)] hover:text-theme-text disabled:opacity-40 disabled:cursor-not-allowed px-2 py-1 rounded transition-colors hover:bg-[var(--color-border)]"
           >
             Next →
           </button>

@@ -99,7 +99,10 @@ async function runBackfill(): Promise<void> {
     await storePrefs({ username });
 
     // 1. Walk all submission pages
-    const PAGE_SIZE = 40;
+    // PAGE_SIZE=20 matches LeetCode's actual per-page cap for submissionList;
+    // using a larger limit causes LC to return 20 items but we'd advance by
+    // the larger number, silently skipping submissions.
+    const PAGE_SIZE = 20;
     let offset = 0;
     let hasNext = true;
     const partialSubs: Omit<Submission, 'difficulty' | 'topicTags' | 'problemId'>[] = [];
@@ -112,9 +115,10 @@ async function runBackfill(): Promise<void> {
         phase: 'submissions',
       });
       const page = await getSubmissionList(offset, PAGE_SIZE);
+      if (page.submissions.length === 0) break;
       partialSubs.push(...page.submissions);
       hasNext = page.hasNext;
-      offset += PAGE_SIZE;
+      offset += page.submissions.length; // advance by actual count, not PAGE_SIZE
       await new Promise<void>((r) => setTimeout(r, 300));
     }
 

@@ -37,13 +37,13 @@ export function ModuleSelector({ currentSlug, onSelect }: ModuleSelectorProps) {
 
   return (
     <div className="flex items-center gap-2.5">
-      <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider shrink-0">
+      <label className="text-[11px] font-semibold text-[var(--color-muted)] uppercase tracking-wider shrink-0">
         Plan
       </label>
       <select
         value={currentSlug ?? ''}
         onChange={(e) => onSelect(e.target.value || null)}
-        className="flex-1 bg-[#282828] border border-white/[0.08] rounded-md px-2.5 py-1.5 text-xs text-[#eff1f6] focus:outline-none focus:border-[#ffa116]/60 transition-colors appearance-none cursor-pointer"
+        className="flex-1 bg-theme-surface border border-[var(--color-border)] rounded-md px-2.5 py-1.5 text-xs text-theme-text focus:outline-none focus:border-theme-accent transition-colors appearance-none cursor-pointer"
       >
         <option value="">— None —</option>
         {merged.map((p) => (
